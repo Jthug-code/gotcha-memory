@@ -1,0 +1,15 @@
+{
+  "description": "Proactively surfaces your saved gotchas relevant to each prompt (gotcha-memory).",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/inject_gotchas.js\""
+          }
+        ]
+      }
+    ]
+  }
+}

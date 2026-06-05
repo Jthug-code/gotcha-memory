@@ -1,0 +1,8 @@
+{
+  "name": "gotcha-memory",
+  "version": "0.1.0",
+  "description": "Your personal gotcha memory for Claude Code. Saves the hard-won fixes you discover and proactively surfaces the relevant ones BEFORE you hit the same wall twice. Local-first, private by default; ships with a small starter set of general gotchas.",
+  "author": {
+    "name": "Jthug-code"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "gotcha-memory",
+  "description": "Personal gotcha memory for Claude Code — never re-debug the same wall twice.",
+  "owner": {
+    "name": "Jthug-code"
+  },
+  "plugins": [
+    {
+      "name": "gotcha-memory",
+      "description": "Saves the hard-won fixes you discover and proactively injects the relevant ones into context before you hit the same wall again. Local-first and private by default — nothing leaves your machine. Ships with a small starter set. Capture with the remember-gotcha skill; injection is automatic on every prompt.",
+      "author": {
+        "name": "Jthug-code"
+      },
+      "category": "productivity",
+      "source": "./plugins/gotcha-memory",
+      "keywords": ["memory", "gotchas", "knowledge", "productivity", "hooks", "claude-code"]
+    }
+  ]
+}
