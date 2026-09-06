@@ -1,0 +1,9 @@
+{
+  "_note": "Copy into ~/.cursor/mcp.json (global) or .cursor/mcp.json (per project), then restart Cursor. Replace the path with the absolute path to server.js on your machine.",
+  "mcpServers": {
+    "gotcha-memory": {
+      "command": "node",
+      "args": ["/ABSOLUTE/PATH/TO/gotcha-memory/mcp-server/server.js"]
+    }
+  }
+}
