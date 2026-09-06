@@ -1,0 +1,9 @@
+{
+  "name": "gotcha-memory-mcp",
+  "version": "0.1.0",
+  "description": "Central gotcha-memory MCP server: search and save your hard-won gotchas, from any MCP client (Claude Code, Cursor, Cline, ...).",
+  "bin": {
+    "gotcha-memory-mcp": "server.js"
+  },
+  "license": "MIT"
+}
