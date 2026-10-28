@@ -22,6 +22,17 @@ const STOP = new Set((
 ).split(" "));
 
 const SUBJECT_W = 5, BODY_W = 1, FLOOR = 4, MAX = 3;
+// v0.1.2 precision (2026-10-28): long prompts share 4+ ordinary words with long claims by chance, so BG3 gotchas were
+// injected into unrelated memory/ops prompts and even into automated task notifications. A subject hit now needs one
+// supporting body word; a body-only match needs BODY_ONLY_MIN hits AND BODY_ONLY_SHARE of the prompt's content terms.
+const BODY_ONLY_MIN = 6, BODY_ONLY_SHARE = 0.3;
+// automated turns (background-task results, system notices) are not user asks: inject nothing
+const AUTOMATED = /^\s*(<task-notification>|\[SYSTEM NOTIFICATION|<system-reminder>)/;
+
+function relevant(subjectHit, bodyHits, nPromptTerms) {
+  if (subjectHit) return bodyHits >= 1;
+  return bodyHits >= Math.max(BODY_ONLY_MIN, Math.ceil(BODY_ONLY_SHARE * nPromptTerms));
+}
 
 function norm(s) {
   return String(s || "").toLowerCase().replace(/['’`]/g, "").replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
@@ -51,6 +62,7 @@ function readStdin() { try { return fs.readFileSync(0, "utf8"); } catch (e) { re
 function main() {
   let data = {};
   try { data = JSON.parse(readStdin() || "{}"); } catch (e) {}
+  if (AUTOMATED.test(String(data.prompt || ""))) return;
   const promptTerms = new Set(termsOf(data.prompt));
   if (!promptTerms.size) return;
 
@@ -67,12 +79,14 @@ function main() {
 
   const scored = [];
   for (const f of facts) {
-    const subjectHit = norm(f.subject).split(" ").some((w) => w.length >= 3 && promptTerms.has(w));
+    const subjectWords = new Set(norm(f.subject).split(" ").filter((w) => w.length >= 3));
+    const subjectHit = [...subjectWords].some((w) => promptTerms.has(w));
     const bodyTerms = new Set(norm((f.claim || "") + " " + (f.domain || "")).split(" "));
     let bodyHits = 0;
-    for (const t of promptTerms) if (bodyTerms.has(t)) bodyHits++;
+    // a subject word repeated in the claim is not separate support
+    for (const t of promptTerms) if (bodyTerms.has(t) && !subjectWords.has(t)) bodyHits++;
     const score = (subjectHit ? SUBJECT_W : 0) + bodyHits * BODY_W;
-    if (score >= FLOOR) scored.push([score * (f.confidence || 0.6), f]);
+    if (score >= FLOOR && relevant(subjectHit, bodyHits, promptTerms.size)) scored.push([score * (f.confidence || 0.6), f]);
   }
   if (!scored.length) return; // nothing strongly relevant -> stay silent
 
