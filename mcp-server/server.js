@@ -58,9 +58,21 @@ function doSearch(query, top) {
   return "Relevant saved gotchas:\n" + scored.slice(0, top || 5).map(([, f]) => "- [" + (f.subject || "?") + "] " + f.claim).join("\n");
 }
 
+// Same canonical subjects as hooks/remember.js (v0.1.2): the injector matches the subject word by word, so a subject
+// is one distinctive token, and one game gets one spelling.
+const ALIASES = [[/baldur|^bg3([-_ ]|$)|^bg3se$/i, "bg3"], [/^ren'?py$/i, "renpy"], [/^mod\.?io$/i, "modio"]];
+function canonSubject(s) {
+  s = String(s || "").trim().toLowerCase();
+  for (const [re, to] of ALIASES) if (re.test(s)) return to;
+  return s;
+}
+
 function doSave(a) {
-  const claim = String(a.claim || "").trim(), subject = String(a.subject || "").trim();
+  const claim = String(a.claim || "").trim(), subject = canonSubject(a.subject);
   if (!claim || !subject) return "Need both a claim and a subject.";
+  const notes = [];
+  if (claim.length > 400) notes.push("NOTE: the claim is " + claim.length + " chars; keep it under ~300 (trigger terms + the fix).");
+  if (subject.split(/[^a-z0-9]+/).filter((w) => w.length >= 3).length > 1) notes.push("NOTE: subject '" + subject + "' has several words and each matches on its own; prefer ONE distinctive token.");
   const blob = [claim, subject, a.domain || ""].join(" ");
   if (SCRUB.some((re) => re.test(blob))) return "HELD: looks like it contains a credential or a local path — make it a general fact and retry.";
   const facts = load();
@@ -68,7 +80,7 @@ function doSave(a) {
   const fact = { claim, subject, domain: a.domain || "", version: a.version || "", confidence: 0.65, corroborations: 1, added: new Date().toISOString().slice(0, 10) };
   try { fs.mkdirSync(path.dirname(STORE), { recursive: true }); fs.appendFileSync(STORE, JSON.stringify(fact) + "\n", "utf8"); }
   catch (e) { return "Could not write the store: " + e.message; }
-  return "Saved a gotcha about '" + subject + "'. Store now has " + (facts.length + 1) + ".";
+  return ["Saved a gotcha about '" + subject + "'. Store now has " + (facts.length + 1) + "."].concat(notes).join("\n");
 }
 
 // ---------- MCP stdio plumbing (JSON-RPC 2.0, newline-delimited) ----------
@@ -80,8 +92,8 @@ const TOOLS = [
   },
   {
     name: "save_gotcha",
-    description: "Save a new gotcha (a general, non-private fix/quirk about a public tool) so it surfaces next time. Use after discovering a non-obvious fix worth not re-learning.",
-    inputSchema: { type: "object", properties: { claim: { type: "string", description: "the gotcha as a standalone sentence" }, subject: { type: "string", description: "the public tool/library/technique, e.g. renpy, ffmpeg" }, domain: { type: "string" }, version: { type: "string" } }, required: ["claim", "subject"] },
+    description: "Save a new gotcha (a general, non-private fix/quirk about a public tool) so it surfaces next time. Use after discovering a non-obvious fix worth not re-learning. Keep the claim under ~300 characters, leading with the trigger terms (tool, API, error text) and then the fix.",
+    inputSchema: { type: "object", properties: { claim: { type: "string", description: "the gotcha as a standalone sentence, under ~300 characters" }, subject: { type: "string", description: "ONE canonical, distinctive token for the public tool/library/technique, e.g. renpy, ffmpeg, bg3; never a phrase of common words" }, domain: { type: "string", description: "short path, e.g. game-modding/bg3" }, version: { type: "string" } }, required: ["claim", "subject"] },
   },
 ];
 
